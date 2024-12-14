@@ -23,8 +23,10 @@ Input (wallet):
     REST API receives a wallet like the following example:
 
 symbol|quantity|price
+```
 BTC,0.12345,37870.5058
 ETH,4.89532,2004.9774
+```
 
 Output (wallet-update):
 
