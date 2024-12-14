@@ -2,8 +2,11 @@
 
 ## Description
 Application provides a REST API to return the updated total financial value of the wallet at any given time (current and past).
+
 Application uses Coincap API (https://docs.coincap.io/) to fetch latest prices of crypto assets.
+
 When given a wallet of crypto assets with their positions (symbol, quantity and price) fetch latest prices from the Coincap API.
+
 The API should return the total financial value of the wallet, the best and worst performing assets and their performance in percentage.
 
 ### Endpoints:
