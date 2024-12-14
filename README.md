@@ -3,11 +3,12 @@
 ## Description
 Application provides a REST API to return the updated total financial value of the wallet at any given time (current and past).
 
-Application uses Coincap API (https://docs.coincap.io/) to fetch latest prices of crypto assets.
-
 When given a wallet of crypto assets with their positions (symbol, quantity and price) fetch latest prices from the Coincap API.
 
 The API should return the total financial value of the wallet, the best and worst performing assets and their performance in percentage.
+
+Application retrieves from time to time (frequency must be set as a mutable argument) and concurrently (for each asset), 
+their latest prices from the Coincap API (https://docs.coincap.io/) and update them in a database.
 
 ### Endpoints:
 - POST /wallet?start={start}&end={end}
@@ -48,9 +49,19 @@ Output (wallet-update):
 - 400: Bad Request - the request was malformed
 - 500: Internal Server Error - something went wrong on our end
 
-
 ## Technologies
 Application uses Spring Data Reactive (R2DBC) to interact with SQL database and Spring WebFlux for Reactive Rest API.
+Database schema is created and maintained using Flyway.
+H2 database is used for dev profile and PostgreSQL for prod profile.
+Coincap API is used to fetch the latest prices of the assets.
+Logback is used for logging.
+OpenAPI 3.0 is used for client API generation.
+
+## Requirements
+- Java 17
+- Maven 3.9.9 (embedded in the project)
+- Docker (optional)
+
 
 ## Running the application
 Project comes with 2 profiles: dev and prod.
