@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.util.List;
 
 /**
  * Service implementation for Asset.
@@ -40,5 +41,15 @@ public class AssetService {
     public void saveAsset(final AssetData assetData) {
         final Asset asset = assetMapper.toAsset(assetData, this.mappingContext);
         assetRepository.save(asset);
+    }
+
+    /**
+     * Saves a list of asset data.
+     *
+     * @param assetDataList the list of asset data
+     */
+    @Transactional
+    public void saveAssets(final List<AssetData> assetDataList) {
+        assetDataList.forEach(this::saveAsset);
     }
 }
