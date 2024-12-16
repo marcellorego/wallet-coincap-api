@@ -1,0 +1,15 @@
+DB_URL: "jdbc:h2:file:./walletdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+DB_USERNAME: "sa"
+DB_PASSWORD: ""
+DATABASE_PLATFORM: org.hibernate.dialect.H2Dialect
+DRIVER_CLASSNAME: org.h2.Driver
+
+spring:
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+logging:
+  level:
+    com.example.demo: DEBUG

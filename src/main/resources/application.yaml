@@ -1,0 +1,54 @@
+info:
+  application:
+    name: wallet-service
+    version: ${version:local}
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ${info.application.name}
+  main:
+    allow-bean-definition-overriding: true
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: ${DRIVER_CLASSNAME}
+
+  jpa:
+    database-platform: ${DATABASE_PLATFORM}
+    defer-datasource-initialization: true
+    open-in-view: false
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        connection.provider_disables_autocommit: true
+        show_sql: false
+
+api:
+  coincap:
+    url: https://api.coincap.io/v2
+    api-key: ${COINCAP_API_KEY:'02080f4f-3301-4857-b588-360ea8c099f5'}
+    assets-page-size: 100
+
+scheduler:
+  enabled: false
+  cronExpression: 0 */1 * * * *
+
+management:
+  endpoint:
+    health:
+      enabled: true
+    info:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+  server:
+    port: 9090
