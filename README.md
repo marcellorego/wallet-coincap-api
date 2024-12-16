@@ -3,18 +3,25 @@
 ## Description
 Application provides a REST API to return the updated total financial value of the wallet at any given time (current and past).
 
-When given a wallet of crypto assets with their positions (symbol, quantity and price) fetch latest prices from the Coincap API.
+When given a wallet of crypto assets with their positions (symbol, quantity and price) fetch latest prices from the CoinCap API.
 
 The API should return the total financial value of the wallet, the best and worst performing assets and their performance in percentage.
 
 Application retrieves from time to time (frequency must be set as a mutable argument) and concurrently (for each asset), 
-their latest prices from the Coincap API (https://docs.coincap.io/) and update them in a database.
+their latest prices from the CoinCap API (https://docs.coincap.io/) and update them in a database.
+
+## Api Documentation
+Swagger UI is available at http://localhost:8080/swagger-ui.html
 
 ### Endpoints:
-- POST /wallet?start={start}&end={end}
-    - start: start date in UNIX time in milliseconds format.
-    - end: end date in UNIX time in milliseconds format.
-    - Request body: wallet
+- GET /api/wallet/{walletId}
+    - Wallet identifier is required as part of the path
+    - Request body: none
+    - Response body: wallet with latest calculated financial value
+
+- POST /api/wallet/{walletId}/update
+    - Wallet identifier is required as part of the path
+    - Request body: see below input (wallet)
     - Response body: wallet with updated total financial value
     - Omitting will return the most recent asset history in the last minute. If start is supplied, end is required and vice versa.
 
@@ -48,20 +55,22 @@ Output (wallet-update):
 
 ### Status Codes and Error Response
 - 200: Successful - this is the data you were looking for
+- 202: Accepted - the request was received and is being processed
 - 400: Bad Request - the request was malformed
+- 404: Not Found - the requested resource was not found
 - 500: Internal Server Error - something went wrong on our end
 
 ## Technologies
 Application uses Spring Data Reactive (R2DBC) to interact with SQL database and Spring WebFlux for Reactive Rest API.
 Database schema is created and maintained using Flyway.
 H2 database is used for dev profile and PostgreSQL for prod profile.
-Coincap API is used to fetch the latest prices of the assets.
+CoinCap API is used to fetch the latest prices of the assets.
 Logback is used for logging.
 OpenAPI 3.0 is used for client API generation.
 
 ## Requirements
 - Java 17
-- Maven 3.9.9 (embedded in the project)
+- Gradle 8.11.1 (embedded in the project)
 - Docker (optional)
 
 
@@ -73,10 +82,10 @@ Prod mode will provide a database connection to a PostgreSQL database.
 
 Running the application in dev mode:
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+./gradlew bootRun --args='--spring.profiles.active=dev'
 ```
 
 Running the application in prod mode:
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
+./gradlew bootRun --args='--spring.profiles.active=prod'
 ```
