@@ -1,7 +1,7 @@
 package com.example.demo.config;
 
 import com.example.demo.config.properties.SchedulerProperties;
-import com.example.demo.scheduler.UpdateAssetsScheduleJob;
+import com.example.demo.scheduler.UpdateAssetsScheduleTask;
 import com.example.demo.service.CoinCapService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -32,9 +32,9 @@ public class SchedulerConfiguration {
     @ConditionalOnProperty(
             value = "scheduler.enabled", havingValue = "true", matchIfMissing = true
     )
-    public UpdateAssetsScheduleJob updateAssetsScheduleJob(final Clock defaultClock,
-                                                           final CoinCapService coinCapService) {
-        return new UpdateAssetsScheduleJob(defaultClock, coinCapService);
+    public UpdateAssetsScheduleTask updateAssetsScheduleJob(final Clock defaultClock,
+                                                            final CoinCapService coinCapService) {
+        return new UpdateAssetsScheduleTask(defaultClock, coinCapService);
     }
 
     /**
