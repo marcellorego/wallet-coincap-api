@@ -1,0 +1,99 @@
+buildscript {
+	ext {
+		springBootVersion = '3.3.6'
+		springManagementVersion = '1.1.6'
+		logstashLogbackVersion = '8.0'
+		httpclient5Version = "5.2.1"
+		openApiVersion = "2.6.0"
+		mapstructVersion = "1.6.3"
+	}
+}
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version "${springBootVersion}"
+	id 'io.spring.dependency-management' version "${springManagementVersion}"
+	id 'idea'
+}
+
+// Apply the Spring Boot plugin to include all application.yaml files for any profile in the jar
+tasks.withType(Copy).configureEach {
+	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+group = "${group}"
+version = "${version}"
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+
+	annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+
+	compileOnly "org.projectlombok:lombok"
+	annotationProcessor "org.projectlombok:lombok"
+
+	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+	implementation "org.apache.httpcomponents.client5:httpclient5:${httpclient5Version}"
+	implementation "net.logstash.logback:logstash-logback-encoder:${logstashLogbackVersion}"
+
+	implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${openApiVersion}"
+
+	implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+
+	runtimeOnly "com.h2database:h2"
+	runtimeOnly "org.postgresql:postgresql"
+
+	testImplementation "org.projectlombok:lombok"
+	testAnnotationProcessor "org.projectlombok:lombok"
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+
+	// Test Logging
+	testLogging {
+		exceptionFormat = "full"
+		showExceptions = true
+		showCauses = true
+		showStackTraces = true
+		showStandardStreams = false
+		events = ["standardError", "passed", "skipped", "failed"]
+	}
+
+	reports {
+		html.required.set(true)
+		junitXml.required.set(true)
+	}
+}
+
+springBoot {
+	buildInfo()
+}
+
+processResources {
+	from(sourceSets.main.resources.srcDirs) {
+		filesMatching(["application.yml"]) {
+			filter { String line ->
+				line.replace('${version:local}', "${version}")
+			}
+		}
+	}
+}
