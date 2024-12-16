@@ -31,13 +31,16 @@ public class WalletService {
 
     private final WalletRepository walletRepository;
     private final WalletMapper walletMapper;
+    private final AssetService assetService;
     private final CoinCapService coinCapService;
 
     public WalletService(final WalletRepository walletRepository,
                          final WalletMapper walletMapper,
+                         final AssetService assetService,
                          final CoinCapService coinCapService) {
         this.walletRepository = walletRepository;
         this.walletMapper = walletMapper;
+        this.assetService = assetService;
         this.coinCapService = coinCapService;
     }
 
@@ -131,6 +134,9 @@ public class WalletService {
 
         final CoinCapAssets coinCapAssets =
                 coinCapService.getCoinCapAssetsAsync(symbols);
+
+        // Update the assets
+        assetService.saveAssets(coinCapAssets.getData());
 
         // Calculate the performance of the wallet
         final WalletPerformanceResponse walletPerformanceResponse =
