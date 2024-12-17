@@ -1,29 +1,26 @@
 package com.example.demo.service;
 
 import com.example.demo.config.properties.CoinCapProperties;
-import com.example.demo.service.client.AssetData;
-import com.example.demo.service.client.CoinCapAssets;
-import com.example.demo.service.client.CoinCapClient;
-import com.example.demo.service.client.CoinCapException;
+import com.example.demo.entity.Asset;
+import com.example.demo.service.client.*;
 import com.example.demo.util.ElapsedTimeWatcher;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Service implementation for CoinCap API calls to rest client.
@@ -33,8 +30,6 @@ import java.util.function.Consumer;
 @Slf4j
 public class CoinCapService {
 
-    private static final int ASSETS_PER_REQUEST = 3;
-    private static final int REQUEST_TIMEOUT = 10;
     private static final DateTimeFormatter INSTANT_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -56,6 +51,7 @@ public class CoinCapService {
 
     /**
      * Formats the Instant value to a string.
+     *
      * @param value the Instant value
      * @return the formatted string
      */
@@ -70,17 +66,17 @@ public class CoinCapService {
      * @param requestedSymbols the requested symbols
      * @return the grouped asset symbols
      */
-    protected List<List<String>> groupAssetSymbols(final List<String> requestedSymbols) {
+    protected List<Set<String>> groupAssetSymbols(final Set<String> requestedSymbols) {
 
         // Group the requested asset symbols into groups of ASSETS_PER_REQUEST
-        final List<List<String>> groupedAssetSymbols = new ArrayList<>();
+        final List<Set<String>> groupedAssetSymbols = new ArrayList<>();
 
-        List<String> currentGroup = new ArrayList<>();
+        Set<String> currentGroup = new LinkedHashSet<>();
         for (String symbol : requestedSymbols) {
             currentGroup.add(symbol);
-            if (currentGroup.size() == ASSETS_PER_REQUEST) {
+            if (currentGroup.size() == coinCapProperties.getAssetsPageSize()) {
                 groupedAssetSymbols.add(currentGroup);
-                currentGroup = new ArrayList<>();
+                currentGroup = new LinkedHashSet<>();
             }
         }
         if (!currentGroup.isEmpty()) {
@@ -96,14 +92,11 @@ public class CoinCapService {
      * @param requestedSymbols the requested symbols
      * @return the CoinCapAssets assets
      */
-    public CoinCapAssets getCoinCapAssetsAsync(final List<String> requestedSymbols) {
+    public Optional<CoinCapAssets> getCoinCapAssetsAsync(final Set<String> requestedSymbols) {
 
         log.debug("Fetching CoinCap assets for {}", requestedSymbols);
 
-        final CoinCapAssets result = new CoinCapAssets();
-        result.setData(new ArrayList<>());
-
-        final List<List<String>> groupedAssetSymbols = groupAssetSymbols(requestedSymbols);
+        final List<Set<String>> groupedAssetSymbols = groupAssetSymbols(requestedSymbols);
 
         log.debug("getCoinCapAssetsAsync :: Start fetching CoinCap for {} groups", groupedAssetSymbols.size());
 
@@ -113,26 +106,14 @@ public class CoinCapService {
 
         // Create an executor service with a fixed thread pool of ASSETS_PER_REQUEST threads
         final ExecutorService executorService = Executors
-                .newFixedThreadPool(ASSETS_PER_REQUEST);
+                .newFixedThreadPool(coinCapProperties.getAssetsPageSize());
 
-        for (List<String> symbols : groupedAssetSymbols) {
-
-            // Create an array of CompletableFuture objects
-            // Fetch the asset data for each asset ID
-            final List<CompletableFuture<AssetData>> futures = symbols
-                    .stream()
-                    .map(symbol -> CompletableFuture.supplyAsync(() -> {
-                        log.debug("Submitted request {} at {}", symbol, formatInstant(defaultClock.instant()));
-                        return getAssetDataBySymbol(symbol);
-                    }, executorService))
-                    .toList();
-            // Wait for all downloads to complete and print the downloaded contents
-            final List<AssetData> completed = getAllCompleted(futures);
-            // Add the completed assets to the result
-            result.getData().addAll(completed);
+        Optional<CoinCapAssets> result = Optional.empty();
+        try {
+            result = Optional.of(fetchGroupedAssets(groupedAssetSymbols, executorService));
+        } finally {
+            executorService.shutdown();
         }
-
-        executorService.shutdown();
 
         final String end = watcher.elapsedTimeInSeconds();
         log.info("getCoinCapAssetsAsync :: Finished fetching CoinCap at: {}", defaultClock.instant());
@@ -141,8 +122,37 @@ public class CoinCapService {
         return result;
     }
 
+    protected CoinCapAssets fetchGroupedAssets(final List<Set<String>> groupedAssetSearchIds,
+                                               final ExecutorService executorService) {
+
+        final CoinCapAssets result = new CoinCapAssets();
+        result.setData(new ArrayList<>());
+        // Set the timestamp to the current time
+        result.setTimestamp(defaultClock.instant().toEpochMilli());
+
+        for (Set<String> searchIds : groupedAssetSearchIds) {
+
+            // Create an array of CompletableFuture objects
+            // Fetch the asset data for each asset ID
+            final List<CompletableFuture<AssetData>> futures = searchIds
+                    .stream()
+                    .map(searchId -> CompletableFuture.supplyAsync(() -> {
+                        log.debug("Submitted request {} at {}", searchId, formatInstant(defaultClock.instant()));
+                        return getAssetBySearchId(searchId);
+                    }, executorService))
+                    .toList();
+            // Wait for all downloads to complete and print the downloaded contents
+            final List<AssetData> completed = getAllCompleted(futures);
+            // Add the completed assets to the result
+            result.getData().addAll(completed);
+        }
+
+        return result;
+    }
+
     /**
      * Waits for all futures to complete and returns the completed futures.
+     *
      * @param futuresList future with requested symbols
      * @return List of AssetData
      */
@@ -150,7 +160,7 @@ public class CoinCapService {
         final CompletableFuture<Void> allFuturesResult = CompletableFuture
                 .allOf(futuresList.toArray(new CompletableFuture[0]));
         try {
-            allFuturesResult.get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            allFuturesResult.get(coinCapProperties.getAssetsRequestTimeout(), TimeUnit.SECONDS);
         } catch (Exception e) {
             Thread.currentThread().interrupt();
             log.error("Error waiting for futures to complete", e);
@@ -159,73 +169,78 @@ public class CoinCapService {
                 .stream()
                 .filter(future -> future.isDone() && !future.isCompletedExceptionally()) // keep only the ones completed
                 .map(CompletableFuture::join) // get the value from the completed future
+                .filter(Objects::nonNull) // remove null values
                 .toList(); // collect as a list
     }
 
     /**
-     * Fetches CoinCap assets for the requested symbols.
+     * Fetches CoinCap assets for the requested searchId.
      *
-     * @param symbol the requested symbol
+     * @param searchId the requested searchId
      * @return AssetData
      */
-    protected AssetData getAssetDataBySymbol(final String symbol) {
-        return coinCapClient.getAssetBySymbol(symbol)
+    protected AssetData getAssetBySearchId(final String searchId) {
+        return coinCapClient.getAssetBySearchId(searchId)
                 .map(CoinCapAssets::getData)
                 .flatMap(assets -> assets.stream().findFirst())
                 .orElse(null);
     }
 
     /**
-     * Fetches all assets from CoinCap API.
-     * @param assetPageSize
-     * @param coinCapAssetsConsumer
-     * @return
-     * @throws CoinCapException
+     * Fetches CoinCap assets for the requested assetIds.
+     *
+     * @param assetId the requested assetId
+     * @return AssetData
      */
-    private CoinCapAssets fetchAllAssets(int assetPageSize, Consumer<List<AssetData>> coinCapAssetsConsumer) throws CoinCapException {
+    protected BigDecimal getAssetHistoryPriceAt(final String assetId, final Instant performanceAt) {
+        final Instant startDate = performanceAt.truncatedTo(ChronoUnit.SECONDS);
+        final Instant endDate = performanceAt.truncatedTo(ChronoUnit.SECONDS)
+                .plus(1, ChronoUnit.MINUTES);
 
-        final CoinCapAssets result = new CoinCapAssets();
-        result.setData(new ArrayList<>());
-
-        int offset = 0;
-        CoinCapAssets assets = coinCapClient.getAssets(assetPageSize, offset);
-        while (Objects.nonNull(assets) && Objects.nonNull(assets.getData()) && !assets.getData().isEmpty()) {
-
-            final List<AssetData> filteredData = assets
-                    .getData()
-                    .stream()
-                    // Remove assets without an ID
-                    .filter(a -> StringUtils.hasLength(a.getId()))
-                    // Remove assets without a symbol
-                    .filter(a -> StringUtils.hasLength(a.getSymbol()))
-                    // Remove assets without price
-                    .filter(a -> Objects.nonNull(a.getPriceUsd()))
-                    .toList();
-
-            if (Objects.nonNull(coinCapAssetsConsumer)) {
-                coinCapAssetsConsumer.accept(filteredData);
-            }
-            result.getData().addAll(filteredData);
-            offset += assetPageSize;
-            assets = coinCapClient.getAssets(assetPageSize, offset);
+        CoinCapHistoryAssets historyAsset = null;
+        try {
+            historyAsset = coinCapClient.getAssetHistoryByPeriod(assetId,
+                    startDate.toEpochMilli(),
+                    endDate.toEpochMilli(),
+                    "m1");
+        } catch (CoinCapException e) {
+            log.error("Error fetching asset history price at {} for asset {} with code {}",
+                    performanceAt, assetId, e.getStatusCode(), e);
+        } catch (Exception e) {
+            log.error("Error fetching asset history price at {} for asset {}", performanceAt, assetId, e);
         }
 
-        return result;
+        return Optional.ofNullable(historyAsset)
+                .map(CoinCapHistoryAssets::getData)
+                .orElse(Collections.emptyList())
+                .stream()
+                .findFirst()
+                .map(AssetHistoryData::getPriceUsd)
+                .orElse(null);
     }
 
     public void updateAssets() {
         try {
-            final CoinCapAssets assets = fetchAllAssets(coinCapProperties.getAssetsPageSize(), assetData -> {
-                log.info("updateAssets :: Fetched {} assets", assetData.size());
-                assetData.forEach(a -> {
-                    try {
-                        assetService.saveAsset(a);
-                    } catch (Exception e) {
-                        log.error("updateAssets :: Error saving asset {}", a, e);
-                    }
-                });
+            final List<Asset> existingAssets = assetService.findAllAssets();
+
+            final Set<String> existingAssetIds = existingAssets
+                    .stream()
+                    .map(Asset::getId)
+                    .collect(Collectors.toSet());
+
+            final List<AssetData> assetDataList = getCoinCapAssetsAsync(existingAssetIds)
+                    .map(CoinCapAssets::getData)
+                    .orElse(Collections.emptyList());
+
+            assetDataList.forEach(assetData -> {
+                try {
+                    assetService.saveAsset(assetData);
+                } catch (Exception e) {
+                    log.error("updateAssets :: Error saving asset {}", assetData, e);
+                }
             });
-            log.info("updateAssets :: Fetched {} assets", assets.getData().size());
+
+            log.info("updateAssets :: Fetched {} assets", assetDataList.size());
         } catch (CoinCapException e) {
             log.error("updateAssets :: Error updating assets", e);
         }
