@@ -56,8 +56,8 @@ class AssetRepositoryTest {
     @Test
     void saveAsset() throws JsonProcessingException {
         final Asset asset = buildAsset();
-        Asset assetMono = repository.save(asset);
-        assertThat(assetMono).isEqualTo(asset);
+        Asset assetSaved = repository.save(asset);
+        assertThat(assetSaved).isEqualTo(asset);
 
         final Optional<Asset> savedAssetOptional = repository.findById(asset.getId());
         assertThat(savedAssetOptional)
