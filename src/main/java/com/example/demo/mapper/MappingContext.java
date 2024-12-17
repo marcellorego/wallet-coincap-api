@@ -38,7 +38,10 @@ public final class MappingContext {
     @AfterMapping
     public void afterWalletMapping(@MappingTarget final Wallet entity,
                                       final WalletPerformanceResponse dto) {
-        entity.setUpdatedAt(clock.instant());
-        entity.setId(walletId);
+        final Wallet.WalletId id = Wallet.WalletId.builder()
+                .id(walletId)
+                .createdAt(clock.instant())
+                .build();
+        entity.setWalletId(id);
     }
 }

@@ -26,7 +26,7 @@ public interface WalletMapper {
     @Mapping(target = "worstAsset", source = "worstAsset")
     @Mapping(target = "bestPerformance", source = "bestPerformance")
     @Mapping(target = "worstPerformance", source = "worstPerformance")
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "walletId.id", ignore = true)
+    @Mapping(target = "walletId.createdAt", ignore = true)
     Wallet toEntity(WalletPerformanceResponse dto, @Context MappingContext context);
 }
