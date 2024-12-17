@@ -19,5 +19,6 @@ public interface WalletMapper {
 
     @Mapping(target = "id", source = "id")
     @Mapping(target = "assetData", source = "linkedAssets")
+    @Mapping(target = "updatedAt", source = "updatedAt")
     WalletResponse toDto(Wallet entity);
 }
