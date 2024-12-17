@@ -3,6 +3,7 @@ package com.example.demo.web.dto;
 import com.example.demo.service.client.AssetData;
 import lombok.Data;
 
+import java.time.Instant;
 import java.util.Set;
 
 /**
@@ -13,4 +14,5 @@ import java.util.Set;
 public final class WalletResponse {
     private String id;
     private Set<AssetData> assetData;
+    private Instant updatedAt;
 }
