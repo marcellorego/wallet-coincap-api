@@ -59,9 +59,9 @@ Output (wallet-update):
 ## Technologies
 Application uses Spring Data to interact with SQL database and Spring Web to provide Rest API.
 Database schema is created and maintained using schema.sql file.
-H2 database is used for dev profile and PostgreSQL for prod profile.
+H2 database is used for `dev` profile and PostgreSQL for `prod` profile.
 CoinCap API is used to fetch the latest prices of the assets.
-Logback is used for logging with console appender with 2 encoders: plain text for dev and json for prod. 
+Logback is used for logging with console appender with 2 encoders per profile: plain text for `dev` and json for `prod`. 
 OpenAPI 3.0 is used for client API generation.
 
 ## Requirements
@@ -82,17 +82,17 @@ Building without running tests:
 ```
 
 ## Running the application
-Project comes with 2 profiles: dev and prod.
+Project comes with 2 profiles: `dev` and `prod`.
 
-Dev mode will provide a database connection to H2 in-memory database. 
-Prod mode will provide a database connection to a PostgreSQL database. See below how to run a local PostgreSQL image on Docker.
+`Dev` mode will provide a database connection to H2 in-memory database. 
+`Prod` mode will provide a database connection to a PostgreSQL database. See below how to run a local PostgreSQL image on Docker.
 
-Running the application in dev mode:
+Running the application in `dev` mode:
 ```bash
 ./gradlew bootRun --args='--spring.profiles.active=dev'
 ```
 
-Running the application in prod mode:
+Running the application in `prod` mode:
 ```bash
 ./gradlew bootRun --args='--spring.profiles.active=prod'
 ```
