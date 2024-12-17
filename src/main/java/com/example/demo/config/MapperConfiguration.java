@@ -1,6 +1,7 @@
 package com.example.demo.config;
 
 import com.example.demo.mapper.AssetMapper;
+import com.example.demo.mapper.PerformanceMapper;
 import com.example.demo.mapper.WalletMapper;
 import org.mapstruct.factory.Mappers;
 import org.springframework.context.annotation.Bean;
@@ -31,5 +32,10 @@ public class MapperConfiguration {
     @Bean
     public WalletMapper walletMapper() {
         return Mappers.getMapper(WalletMapper.class);
+    }
+
+    @Bean
+    public PerformanceMapper performanceMapper() {
+        return Mappers.getMapper(PerformanceMapper.class);
     }
 }
