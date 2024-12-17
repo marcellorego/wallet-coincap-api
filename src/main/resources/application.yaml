@@ -37,8 +37,8 @@ api:
     assets-page-size: 100
 
 scheduler:
-  enabled: false
-  cronExpression: 0 */1 * * * *
+  enabled: true
+  cronExpression: 0 */5 * * * *
 
 management:
   endpoint:
