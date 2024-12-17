@@ -34,7 +34,7 @@ api:
   coincap:
     url: https://api.coincap.io/v2
     api-key: ${COINCAP_API_KEY:''}
-    assets-page-size: 5
+    assets-page-size: 3
     assets-request-timeout: 60000
 
 scheduler:
