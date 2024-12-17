@@ -13,17 +13,13 @@ their latest prices from the CoinCap API (https://docs.coincap.io/) and update t
 ## Api Documentation
 Swagger UI is available at http://localhost:8080/swagger-ui.html
 
-### Endpoints:
-- GET /api/wallet/{walletId}
-    - Wallet identifier is required as part of the path
-    - Request body: none
-    - Response body: wallet with latest calculated financial value
+### Endpoint:
 
-- POST /api/wallet/{walletId}/update
+- POST /api/wallet/{walletId}?date={date}
     - Wallet identifier is required as part of the path
     - Request body: see below input (wallet)
-    - Response body: wallet with updated total financial value
-    - Omitting will return the most recent asset history in the last minute. If start is supplied, end is required and vice versa.
+    - Response body: wallet performance with updated total financial value
+    - Optional date parameter in format (yyyy-MM-ddTHH:mm:ssZ) for historical performance computation on that specific date.
 
 Input (wallet):
 
@@ -61,11 +57,11 @@ Output (wallet-update):
 - 500: Internal Server Error - something went wrong on our end
 
 ## Technologies
-Application uses Spring Data Reactive (R2DBC) to interact with SQL database and Spring WebFlux for Reactive Rest API.
-Database schema is created and maintained using Flyway.
+Application uses Spring Data to interact with SQL database and Spring Web to provide Rest API.
+Database schema is created and maintained using schema.sql file.
 H2 database is used for dev profile and PostgreSQL for prod profile.
 CoinCap API is used to fetch the latest prices of the assets.
-Logback is used for logging.
+Logback is used for logging with console appender with 2 encoders: plain text for dev and json for prod. 
 OpenAPI 3.0 is used for client API generation.
 
 ## Requirements
@@ -73,12 +69,23 @@ OpenAPI 3.0 is used for client API generation.
 - Gradle 8.11.1 (embedded in the project)
 - Docker (optional)
 
+## Building the application
+
+Building and running tests:
+```bash
+./gradlew clean build
+```
+
+Building without running tests:
+```bash
+./gradlew clean build -x test
+```
 
 ## Running the application
 Project comes with 2 profiles: dev and prod.
 
 Dev mode will provide a database connection to H2 in-memory database. 
-Prod mode will provide a database connection to a PostgreSQL database.
+Prod mode will provide a database connection to a PostgreSQL database. See below how to run a local PostgreSQL image on Docker.
 
 Running the application in dev mode:
 ```bash
@@ -88,4 +95,9 @@ Running the application in dev mode:
 Running the application in prod mode:
 ```bash
 ./gradlew bootRun --args='--spring.profiles.active=prod'
+```
+
+### Running Postgres image on Docker
+```bash
+docker run --name postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=walletdb -p 5432:5432 -d postgres
 ```

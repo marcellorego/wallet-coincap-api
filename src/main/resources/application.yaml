@@ -33,12 +33,13 @@ spring:
 api:
   coincap:
     url: https://api.coincap.io/v2
-    api-key: ${COINCAP_API_KEY:'02080f4f-3301-4857-b588-360ea8c099f5'}
-    assets-page-size: 100
+    api-key: ${COINCAP_API_KEY:''}
+    assets-page-size: 5
+    assets-request-timeout: 60000
 
 scheduler:
   enabled: true
-  cronExpression: 0 */5 * * * *
+  cronExpression: 0 */1 * * * *
 
 management:
   endpoint:

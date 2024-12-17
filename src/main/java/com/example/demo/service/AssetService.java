@@ -20,36 +20,53 @@ import java.util.List;
 @Service
 public class AssetService {
 
+    private final Clock defaultClock;
     private final AssetMapper assetMapper;
     private final AssetRepository assetRepository;
-    private final MappingContext mappingContext;
 
     public AssetService(final Clock defaultClock,
                         final AssetMapper assetMapper,
                         final AssetRepository assetRepository) {
+        this.defaultClock = defaultClock;
         this.assetMapper = assetMapper;
         this.assetRepository = assetRepository;
-        this.mappingContext = new MappingContext(defaultClock);
+
     }
 
     /**
-     * Saves asset data.
+     * Saves an asset data.
      *
      * @param assetData the asset data
+     * @return the saved asset
      */
     @Transactional
-    public void saveAsset(final AssetData assetData) {
-        final Asset asset = assetMapper.toAsset(assetData, this.mappingContext);
-        assetRepository.save(asset);
+    public Asset saveAsset(final AssetData assetData) {
+        final MappingContext mappingContext = new MappingContext(defaultClock.instant());
+        final Asset asset = assetMapper.toAsset(assetData, mappingContext);
+        return assetRepository.save(asset);
     }
 
     /**
      * Saves a list of asset data.
      *
      * @param assetDataList the list of asset data
+     * @return the list of saved assets
      */
     @Transactional
-    public void saveAssets(final List<AssetData> assetDataList) {
-        assetDataList.forEach(this::saveAsset);
+    public List<Asset> saveAssets(final List<AssetData> assetDataList) {
+        return assetDataList
+                .stream()
+                .map(this::saveAsset)
+                .toList();
+    }
+
+    /**
+     * Finds all assets.
+     *
+     * @return the list of assets
+     */
+    @Transactional(readOnly = true)
+    public List<Asset> findAllAssets() {
+        return assetRepository.findAll();
     }
 }

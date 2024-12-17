@@ -11,7 +11,9 @@ public class CoinCapProperties {
 
     private String url;
     private String apiKey;
-    private int assetsPageSize = 100;
+    private int assetsPageSize = 3;
+    private int assetsRequestTimeout = 60000;
+
 
     private int connectionTimeout = 5000;
     private int readTimeout = 5000;

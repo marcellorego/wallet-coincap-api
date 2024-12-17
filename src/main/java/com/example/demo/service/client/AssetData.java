@@ -24,7 +24,7 @@ import java.math.BigDecimal;
  */
 
 @Data
-public class AssetData {
+public final class AssetData {
 
     private String id;
     private String symbol;

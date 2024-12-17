@@ -44,8 +44,8 @@ public class ExceptionTranslatorAdvice extends ResponseEntityExceptionHandler {
                                                              WebRequest request) {
 
         final HttpStatus httpStatus =
-            Optional.ofNullable(HttpStatus.resolve(status.value()))
-                .orElse(HttpStatus.INTERNAL_SERVER_ERROR);
+                Optional.ofNullable(HttpStatus.resolve(status.value()))
+                        .orElse(HttpStatus.INTERNAL_SERVER_ERROR);
 
         final InternalServerErrorException serverError =
                 new InternalServerErrorException(ex.getMessage(), ex);
@@ -60,7 +60,7 @@ public class ExceptionTranslatorAdvice extends ResponseEntityExceptionHandler {
                                                                 final WebRequest request) {
 
         final String defaultMessage = "No handler found for " + ex.getHttpMethod()
-            + " " + ex.getRequestURL() + "\n" + ex.getLocalizedMessage();
+                + " " + ex.getRequestURL() + "\n" + ex.getLocalizedMessage();
 
         final String path = getRequestUrl(request);
 
@@ -113,7 +113,8 @@ public class ExceptionTranslatorAdvice extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ClientError> handleValidationException(final ValidationException ex,
                                                                  final HttpServletRequest request) {
-        final HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
+        final HttpStatus httpStatus = findResponseStatus(ex.getClass())
+                .orElse(HttpStatus.BAD_REQUEST);
         final ClientError clientError = ClientError.builder()
                 .key(ex.getKey())
                 .message(ex.getMessage())
@@ -126,7 +127,8 @@ public class ExceptionTranslatorAdvice extends ResponseEntityExceptionHandler {
     @ExceptionHandler(KeyBasedException.class)
     public ResponseEntity<ClientError> handleAppException(final KeyBasedException ex,
                                                           final HttpServletRequest request) {
-        final HttpStatus httpStatus = findResponseStatus(ex.getClass());
+        final HttpStatus httpStatus = findResponseStatus(ex.getClass())
+                .orElse(HttpStatus.INTERNAL_SERVER_ERROR);
         final ClientError clientError = ClientError.builder()
                 .key(ex.getKey())
                 .message(ex.getMessage())
@@ -145,19 +147,19 @@ public class ExceptionTranslatorAdvice extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(clientError, httpStatus);
     }
 
-    private HttpStatus findResponseStatus(final Class<? extends Exception> exceptionClass) {
+    private Optional<HttpStatus> findResponseStatus(final Class<? extends Exception> exceptionClass) {
 
-        HttpStatus result = HttpStatus.INTERNAL_SERVER_ERROR;
+        Optional<HttpStatus> resultOptional = Optional.empty();
 
         final Annotation[] annotations = exceptionClass.getAnnotations();
         for (final Annotation annotation : annotations) {
             if (annotation instanceof ResponseStatus responseStatus) {
-                result = responseStatus.value();
+                resultOptional = Optional.of(responseStatus.value());
                 break;
             }
         }
 
-        return result;
+        return resultOptional;
     }
 
     private String getRequestUrl(final RequestAttributes request) {

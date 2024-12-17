@@ -23,6 +23,7 @@ import java.util.Optional;
 @JsonPropertyOrder({"total", "best_asset", "best_performance", "worst_asset", "worst_performance"})
 public final class WalletPerformanceResponse {
 
+    @JsonIgnore
     private final BigDecimal total;
     @JsonProperty("best_asset")
     private final String bestAsset;
@@ -33,8 +34,8 @@ public final class WalletPerformanceResponse {
     @JsonIgnore
     private final BigDecimal worstPerformance;
 
-
-    public double getTotal() {
+    @JsonProperty("total")
+    public double getTotalScaled() {
         return Optional.ofNullable(total)
                 .map(b -> b.setScale(2, RoundingMode.HALF_UP))
                 .map(BigDecimal::doubleValue)

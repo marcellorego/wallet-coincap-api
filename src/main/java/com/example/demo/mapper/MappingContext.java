@@ -1,14 +1,14 @@
 package com.example.demo.mapper;
 
 import com.example.demo.entity.Asset;
-import com.example.demo.entity.Wallet;
+import com.example.demo.entity.Performance;
 import com.example.demo.service.client.AssetData;
 import com.example.demo.web.dto.WalletPerformanceResponse;
 import lombok.Getter;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.MappingTarget;
 
-import java.time.Clock;
+import java.time.Instant;
 
 /**
  * Mapping context for AssetMapper and WalletMapper.
@@ -17,31 +17,31 @@ import java.time.Clock;
 @Getter
 public final class MappingContext {
 
-    private final Clock clock;
+    private final Instant currentTime;
     private String walletId;
 
-    public MappingContext(final Clock clock) {
-        this.clock = clock;
+    public MappingContext(final Instant currentTime) {
+        this.currentTime = currentTime;
     }
 
-    public MappingContext(final Clock clock, final String walletId) {
-        this(clock);
+    public MappingContext(final Instant currentTime, final String walletId) {
+        this(currentTime);
         this.walletId = walletId;
     }
 
     @AfterMapping
     public void afterAssetDataMapping(@MappingTarget final Asset entity,
                                  final AssetData dto) {
-        entity.setUpdatedAt(clock.instant());
+        entity.setUpdatedAt(currentTime);
     }
 
     @AfterMapping
-    public void afterWalletMapping(@MappingTarget final Wallet entity,
-                                      final WalletPerformanceResponse dto) {
-        final Wallet.WalletId id = Wallet.WalletId.builder()
-                .id(walletId)
-                .createdAt(clock.instant())
+    public void afterPerformanceMapping(@MappingTarget final Performance entity,
+                                   final WalletPerformanceResponse dto) {
+        final Performance.PerformanceId id = Performance.PerformanceId.builder()
+                .walletId(walletId)
+                .updatedAt(currentTime)
                 .build();
-        entity.setWalletId(id);
+        entity.setId(id);
     }
 }

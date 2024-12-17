@@ -1,8 +1,7 @@
 package com.example.demo.service;
 
+import com.example.demo.entity.Asset;
 import com.example.demo.entity.Wallet;
-import com.example.demo.mapper.MappingContext;
-import com.example.demo.mapper.WalletMapper;
 import com.example.demo.repository.WalletRepository;
 import com.example.demo.service.client.AssetData;
 import com.example.demo.service.client.CoinCapAssets;
@@ -14,11 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -30,90 +29,18 @@ import java.util.stream.Collectors;
 public class WalletService {
 
     private final WalletRepository walletRepository;
-    private final WalletMapper walletMapper;
     private final AssetService assetService;
+    private final PerformanceService performanceService;
     private final CoinCapService coinCapService;
 
     public WalletService(final WalletRepository walletRepository,
-                         final WalletMapper walletMapper,
+                         final PerformanceService performanceService,
                          final AssetService assetService,
                          final CoinCapService coinCapService) {
         this.walletRepository = walletRepository;
-        this.walletMapper = walletMapper;
+        this.performanceService = performanceService;
         this.assetService = assetService;
         this.coinCapService = coinCapService;
-    }
-
-    /**
-     * Calculate the value of the wallet and the best and worst performing assets.
-     *
-     * @param requestedAssetList
-     * @param coinCapAssets
-     * @return
-     */
-    private WalletPerformanceResponse calculateWalletValue(final List<RequestedAsset> requestedAssetList,
-                                                           final CoinCapAssets coinCapAssets) {
-
-        // Create a map of the requested assets
-        final Map<String, RequestedAsset> requestedAssetMap = requestedAssetList
-                .stream()
-                .collect(Collectors.toMap(RequestedAsset::symbol, Function.identity()));
-
-        // Create a map of the coin cap assets
-        final Map<String, AssetData> assetDataMap = coinCapAssets
-                .getData()
-                .stream()
-                .collect(Collectors.toMap(AssetData::getSymbol, Function.identity()));
-
-        BigDecimal totalValue = BigDecimal.ZERO;
-
-        RequestedAsset bestAsset = null;
-        BigDecimal bestPerformance = BigDecimal.ZERO;
-
-        RequestedAsset worstAsset = null;
-        BigDecimal worstPerformance = BigDecimal.ZERO;
-
-        for (Map.Entry<String, RequestedAsset> entry : requestedAssetMap.entrySet()) {
-
-            final RequestedAsset requestedAsset = entry.getValue();
-            final AssetData assetData = assetDataMap.getOrDefault(entry.getKey(), null);
-
-            if (assetData == null) {
-                log.warn("Asset not found for symbol {}", entry.getKey());
-                continue;
-            }
-
-            // Calculate the current value of the asset based on the held quantity and the current price
-            final BigDecimal currentValue = assetData.getPriceUsd().multiply(requestedAsset.quantity());
-
-            totalValue = totalValue.add(currentValue);
-
-            // Calculation of performance
-            // Subtract the starting value from the ending value
-            // Then divide that number by the starting value (keep scale to 20 decimal places as database column)
-            // Represents the basic rate of return.
-            final BigDecimal performance = (
-                    assetData.getPriceUsd().subtract(requestedAsset.price()))
-                    .divide(requestedAsset.price(), 20, RoundingMode.HALF_UP);
-
-            if (bestAsset != requestedAsset && performance.compareTo(bestPerformance) > 0) {
-                bestAsset = requestedAsset;
-                bestPerformance = performance;
-            }
-
-            if (worstAsset != requestedAsset && performance.compareTo(worstPerformance) < 0) {
-                worstAsset = requestedAsset;
-                worstPerformance = performance;
-            }
-        }
-
-        return new WalletPerformanceResponse(
-                totalValue,
-                Optional.ofNullable(bestAsset).map(RequestedAsset::symbol).orElse(""),
-                bestPerformance,
-                Optional.ofNullable(worstAsset).map(RequestedAsset::symbol).orElse(""),
-                worstPerformance);
-
     }
 
     /**
@@ -121,53 +48,63 @@ public class WalletService {
      *
      * @param walletId
      * @param requestedAssetList
-     * @return
-     */
-    @Transactional
-    public WalletPerformanceResponse updatePerformance(final String walletId,
-                                                       final List<RequestedAsset> requestedAssetList) {
-
-        final List<String> symbols = requestedAssetList
-                .stream()
-                .map(RequestedAsset::symbol)
-                .toList();
-
-        final CoinCapAssets coinCapAssets =
-                coinCapService.getCoinCapAssetsAsync(symbols);
-
-        // Update the assets
-        assetService.saveAssets(coinCapAssets.getData());
-
-        // Calculate the performance of the wallet
-        final WalletPerformanceResponse walletPerformanceResponse =
-                calculateWalletValue(requestedAssetList, coinCapAssets);
-
-        final MappingContext mappingContext = new MappingContext(coinCapService.getDefaultClock(), walletId);
-        final Wallet wallet = walletMapper.toEntity(walletPerformanceResponse, mappingContext);
-
-        // Save the wallet
-        walletRepository.save(wallet);
-
-        return walletPerformanceResponse;
-    }
-
-    /**
-     * Get the performance of the wallet.
-     *
-     * @param walletId
+     * @param performanceAt
      * @return
      * @throws NotFoundException
      */
     @Transactional
-    public WalletPerformanceResponse getPerformance(final String walletId) throws NotFoundException {
+    public WalletPerformanceResponse updatePerformance(final String walletId,
+                                                       final Set<RequestedAsset> requestedAssetList,
+                                                       final Instant performanceAt) {
 
-        final WalletPerformanceResponse result = walletRepository.findById(walletId)
-                .map(walletMapper::toDto)
-                .orElseThrow(() -> new NotFoundException(NotFoundException.NOT_FOUND_KEY,
-                        "Wallet", "walletId", walletId));
+        final Set<String> symbols = requestedAssetList
+                .stream()
+                .map(RequestedAsset::getSymbol)
+                .collect(Collectors.toSet());
 
-        log.debug("Fetched wallet performance for walletId {}: {}", walletId, result);
+        final CoinCapAssets coinCapAssets =
+                coinCapService.getCoinCapAssetsAsync(symbols)
+                        .orElseThrow(() -> new NotFoundException(NotFoundException.NOT_FOUND_KEY,
+                                "CoinCapAssets", "walletId", walletId));
 
-        return result;
+        // Get the historical value of each asset at the specified time
+        if (Objects.nonNull(performanceAt)) {
+
+            for (AssetData assetData : coinCapAssets.getData()) {
+
+                final BigDecimal historicalValue =
+                        coinCapService.getAssetHistoryPriceAt(assetData.getId(), performanceAt);
+
+                assetData.setPriceUsd(historicalValue);
+            }
+
+            // Update the timestamp with the specified parameter time
+            coinCapAssets.setTimestamp(performanceAt.toEpochMilli());
+
+        }
+
+        final Instant updatedAt = Instant.ofEpochMilli(coinCapAssets.getTimestamp());
+
+        // Update the assets
+        final List<Asset> savedAssets =
+                assetService.saveAssets(coinCapAssets.getData());
+
+        // Create the wallet
+        final Wallet wallet = new Wallet();
+        wallet.setId(walletId);
+        wallet.setUpdatedAt(updatedAt);
+        wallet.setLinkedAssets(new LinkedHashSet<>(savedAssets));
+
+        // Save the wallet
+        walletRepository.save(wallet);
+
+        // Calculate the performance of the wallet
+        final WalletPerformanceResponse walletPerformanceResponse =
+                performanceService.calculateWalletValue(requestedAssetList, coinCapAssets);
+
+        // Save the performance
+        performanceService.savePerformance(walletId, updatedAt, walletPerformanceResponse);
+
+        return walletPerformanceResponse;
     }
 }

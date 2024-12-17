@@ -1,8 +1,7 @@
 package com.example.demo.mapper;
 
 import com.example.demo.entity.Wallet;
-import com.example.demo.web.dto.WalletPerformanceResponse;
-import org.mapstruct.Context;
+import com.example.demo.web.dto.WalletResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -11,22 +10,15 @@ import org.mapstruct.ReportingPolicy;
  * Mapper for Wallet.
  */
 
-@Mapper(unmappedTargetPolicy = ReportingPolicy.ERROR)
+@Mapper(unmappedTargetPolicy = ReportingPolicy.ERROR,
+        uses = {
+                AssetMapper.class
+        }
+)
 public interface WalletMapper {
 
-    @Mapping(target = "total", source = "totalUsd")
-    @Mapping(target = "bestAsset", source = "bestAsset")
-    @Mapping(target = "worstAsset", source = "worstAsset")
-    @Mapping(target = "bestPerformance", source = "bestPerformance")
-    @Mapping(target = "worstPerformance", source = "worstPerformance")
-    WalletPerformanceResponse toDto(Wallet entity);
-
-    @Mapping(target = "totalUsd", source = "total")
-    @Mapping(target = "bestAsset", source = "bestAsset")
-    @Mapping(target = "worstAsset", source = "worstAsset")
-    @Mapping(target = "bestPerformance", source = "bestPerformance")
-    @Mapping(target = "worstPerformance", source = "worstPerformance")
-    @Mapping(target = "walletId.id", ignore = true)
-    @Mapping(target = "walletId.createdAt", ignore = true)
-    Wallet toEntity(WalletPerformanceResponse dto, @Context MappingContext context);
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "assetData", source = "linkedAssets")
+    @Mapping(target = "updatedAt", source = "updatedAt")
+    WalletResponse toDto(Wallet entity);
 }

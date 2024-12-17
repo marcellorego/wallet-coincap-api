@@ -6,9 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Service to parse the requested assets from the input string.
@@ -34,11 +34,11 @@ public class RequestedAssetsParserService {
      * Parse the requested assets from the input string.
      *
      * @param requestedAssets the input string
-     * @return the list of requested assets
+     * @return the set of requested assets
      */
-    public List<RequestedAsset> parseRequestedAssets(String requestedAssets) throws ParseException {
+    public Set<RequestedAsset> parseRequestedAssets(String requestedAssets) throws ParseException {
 
-        final List<RequestedAsset> assets = new ArrayList<>();
+        final Set<RequestedAsset> assets = new LinkedHashSet<>();
 
         if (requestedAssets == null || requestedAssets.isEmpty()) {
             final OffendingValue offendingValue = OffendingValue
@@ -59,7 +59,11 @@ public class RequestedAssetsParserService {
                 String symbol = getContent(parts[0]);
                 BigDecimal quantity = new BigDecimal(getContent(parts[1]));
                 BigDecimal price = new BigDecimal(getContent(parts[2]));
-                assets.add(new RequestedAsset(symbol, quantity, price));
+                assets.add(RequestedAsset.builder()
+                        .symbol(symbol)
+                        .quantity(quantity)
+                        .price(price)
+                        .build());
             } else {
                 final OffendingValue offendingValue = OffendingValue
                         .builder()

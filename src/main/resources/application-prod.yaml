@@ -1,10 +1,19 @@
-DB_URL: "jdbc:h2:file:./walletdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
-DB_USERNAME: "sa"
-DB_PASSWORD: ""
-DATABASE_PLATFORM: org.hibernate.dialect.H2Dialect
-DRIVER_CLASSNAME: org.h2.Driver
+DB_URL: jdbc:postgresql://postgres:5432/walletdb?currentSchema=public
+DB_USERNAME: "postgres"
+DB_PASSWORD: "postgres"
+DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+DRIVER_CLASSNAME: org.postgresql.Driver
 
 spring:
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      auto-commit: false #auto commit
+      maximum-pool-size: 10 #maximum pool size
+      leak-detection-threshold: 30000
+      max-lifetime: 60000
+      connection-timeout: 20000
+
   jpa:
     show-sql: true
     hibernate:

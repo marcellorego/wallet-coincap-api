@@ -1,10 +1,20 @@
 package com.example.demo.web.dto;
 
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.math.BigDecimal;
 
 /**
  * Requested asset DTO.
  */
 
-public record RequestedAsset(String symbol, BigDecimal quantity, BigDecimal price) {
+@Builder
+@Data
+@EqualsAndHashCode(of = {"symbol"})
+public final class RequestedAsset {
+    private String symbol;
+    private BigDecimal quantity;
+    private BigDecimal price;
 }
