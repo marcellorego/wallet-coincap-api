@@ -27,7 +27,7 @@ import java.util.List;
  */
 
 @Data
-public class CoinCapAssets {
+public final class CoinCapAssets {
     private List<AssetData> data;
     private long timestamp;
 }

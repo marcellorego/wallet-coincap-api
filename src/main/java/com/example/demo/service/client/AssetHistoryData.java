@@ -16,7 +16,7 @@ import java.time.ZonedDateTime;
  */
 
 @Data
-public class AssetHistoryData {
+public final class AssetHistoryData {
 
     private BigDecimal priceUsd;
     private ZonedDateTime date;

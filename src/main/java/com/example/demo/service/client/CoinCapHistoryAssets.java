@@ -9,7 +9,7 @@ import java.util.List;
  */
 
 @Data
-public class CoinCapHistoryAssets {
+public final class CoinCapHistoryAssets {
     private List<AssetHistoryData> data;
     private long timestamp;
 }

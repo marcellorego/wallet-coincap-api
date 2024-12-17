@@ -24,7 +24,7 @@ import lombok.Data;
  */
 
 @Data
-public class CoinCapAsset {
+public final class CoinCapAsset {
 
     private AssetData data;
     private long timestamp;
