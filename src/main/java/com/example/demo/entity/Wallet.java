@@ -32,6 +32,7 @@ public class Wallet {
     @NotNull
     private Instant updatedAt;
 
+    @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER, cascade = {
             CascadeType.DETACH, CascadeType.MERGE,
             CascadeType.PERSIST, CascadeType.REFRESH})
