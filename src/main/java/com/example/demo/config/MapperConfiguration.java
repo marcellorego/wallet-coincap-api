@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
 public class MapperConfiguration {
 
     /**
-     * Asset mapper asset mapper.
+     * Asset mapper.
      *
      * @return the asset mapper
      */
@@ -25,7 +25,7 @@ public class MapperConfiguration {
     }
 
     /**
-     * Wallet mapper wallet mapper.
+     * Wallet mapper.
      *
      * @return the wallet mapper
      */
@@ -34,6 +34,11 @@ public class MapperConfiguration {
         return Mappers.getMapper(WalletMapper.class);
     }
 
+    /**
+     * Performance mapper.
+     *
+     * @return the performance mapper
+     */
     @Bean
     public PerformanceMapper performanceMapper() {
         return Mappers.getMapper(PerformanceMapper.class);
