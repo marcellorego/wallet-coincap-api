@@ -29,27 +29,42 @@ public class AssetService {
                         final AssetRepository assetRepository) {
         this.assetMapper = assetMapper;
         this.assetRepository = assetRepository;
-        this.mappingContext = new MappingContext(defaultClock);
+        this.mappingContext = new MappingContext(defaultClock.instant());
     }
 
     /**
-     * Saves asset data.
+     * Saves an asset data.
      *
      * @param assetData the asset data
+     * @return the saved asset
      */
     @Transactional
-    public void saveAsset(final AssetData assetData) {
+    public Asset saveAsset(final AssetData assetData) {
         final Asset asset = assetMapper.toAsset(assetData, this.mappingContext);
-        assetRepository.save(asset);
+        return assetRepository.save(asset);
     }
 
     /**
      * Saves a list of asset data.
      *
      * @param assetDataList the list of asset data
+     * @return the list of saved assets
      */
     @Transactional
-    public void saveAssets(final List<AssetData> assetDataList) {
-        assetDataList.forEach(this::saveAsset);
+    public List<Asset> saveAssets(final List<AssetData> assetDataList) {
+        return assetDataList
+                .stream()
+                .map(this::saveAsset)
+                .toList();
+    }
+
+    /**
+     * Finds all assets.
+     *
+     * @return the list of assets
+     */
+    @Transactional(readOnly = true)
+    public List<Asset> findAllAssets() {
+        return assetRepository.findAll();
     }
 }
