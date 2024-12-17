@@ -51,7 +51,7 @@ public class RequestedAssetsParserService {
         }
 
         // Split the input by new lines
-        String[] lines = requestedAssets.split(NEW_LINE);
+        final String[] lines = requestedAssets.split(NEW_LINE);
 
         for (String line : lines) {
             String[] parts = line.split(",");
