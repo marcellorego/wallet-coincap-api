@@ -47,6 +47,7 @@ public class HttpConfiguration {
                             "Bearer " + coinCapProperties.getApiKey());
                     httpHeaders.add("Accept", "application/json");
                     httpHeaders.add("Content-Type", "application/json");
+                    httpHeaders.add("Accept-Encoding", "gzip");
                 })
                 .requestFactory(clientHttpRequestFactory)
                 .build();
