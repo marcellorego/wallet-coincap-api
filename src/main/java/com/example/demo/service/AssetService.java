@@ -20,16 +20,17 @@ import java.util.List;
 @Service
 public class AssetService {
 
+    private final Clock defaultClock;
     private final AssetMapper assetMapper;
     private final AssetRepository assetRepository;
-    private final MappingContext mappingContext;
 
     public AssetService(final Clock defaultClock,
                         final AssetMapper assetMapper,
                         final AssetRepository assetRepository) {
+        this.defaultClock = defaultClock;
         this.assetMapper = assetMapper;
         this.assetRepository = assetRepository;
-        this.mappingContext = new MappingContext(defaultClock.instant());
+
     }
 
     /**
@@ -40,7 +41,8 @@ public class AssetService {
      */
     @Transactional
     public Asset saveAsset(final AssetData assetData) {
-        final Asset asset = assetMapper.toAsset(assetData, this.mappingContext);
+        final MappingContext mappingContext = new MappingContext(defaultClock.instant());
+        final Asset asset = assetMapper.toAsset(assetData, mappingContext);
         return assetRepository.save(asset);
     }
 
